@@ -18,14 +18,17 @@ The prefix for the bot is `-` or `@mention`. Type `-help` for information about 
 ![](https://i.imgur.com/zDcnLmh.png)
 
 * `-plot <country_name or ISO2/3 code>`: Plot linear and logarithmic graphs for a particular country
+
 ![](https://i.imgur.com/g3LaAhy.png)
 
 ### India specific Commands:
 * `-ind stats`: Get stats about a particular state/union-territory/city of India
+
 ![](https://i.imgur.com/lR78Vas.png)
 ![](https://i.imgur.com/7YQe71k.png)
 
 * `-ind today`: Get stats about new cases/deaths/recoveries in India today
+
 ![](https://i.imgur.com/r6523cF.png)
 
 ### Miscellaneous Commands 
