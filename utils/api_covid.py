@@ -61,3 +61,13 @@ class CovidAPI:
         response = await self.api_response()
         return response
 
+    async def get_country_timeline1(self,country):
+        self.url = f"https://covidapi.info/api/v1/country/{country}"
+        response = await self.api_response()
+        return response
+
+    async def iso2_to_iso3(self,iso2):
+        self.url=f"http://country.io/iso3.json";
+        response = await self.api_response()
+        return response[iso2]
+
