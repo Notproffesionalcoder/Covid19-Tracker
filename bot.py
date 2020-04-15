@@ -24,6 +24,75 @@ def send_banner():
     return random.choice(data["banner"])
 
 
+async def plot_graph1(ctx, iso3, num, name):
+    data = await api_covid.CovidAPI().get_country_timeline1(iso3)
+    if data is None:
+        await send_error(ctx, "API Error!")
+        return
+    x_axis = []
+    cases = []
+    deaths = []
+    recovery = []
+    for x in data['result']:
+        try:
+            x_axis.append(datetime.strptime(str(x), '%Y-%m-%d'))
+            cases.append(data['result'][x]['confirmed'])
+            deaths.append(data['result'][x]['deaths'])
+            recovery.append(data['result'][x]['recovered'])
+        except Exception:
+            pass
+    plt.plot(x_axis, cases, color='yellow', linestyle='-', marker='o', markersize=4, markerfacecolor='yellow', label="Total Cases")
+    plt.plot(x_axis, recovery, color='green', linestyle='-', marker='o', markersize=4, markerfacecolor='green', label="Total Recoveries")
+    plt.plot(x_axis, deaths, color='red', linestyle='-', marker='o', markersize=4, markerfacecolor='red', label="Total Deaths")
+
+    plt.gcf().autofmt_xdate()
+    plt.grid()
+    plt.legend()
+    ax = plt.axes()
+    plt.setp(ax.get_xticklabels(), color="white")
+    plt.setp(ax.get_yticklabels(), color="white")
+    filename = "%s.png" % str(ctx.message.id)
+    plt.savefig(filename, transparent=True)
+    with open(filename, 'rb') as file:
+        discord_file = File(BytesIO(file.read()), filename='plot.png')
+    os.remove(filename)
+    plt.clf()
+    plt.close()
+    embed = Embed(title=f"Linear graph for country {name}", color=Color.blue())
+    embed.set_image(url="attachment://plot.png")
+    embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
+    await ctx.channel.send(embed=embed, file=discord_file)
+    if num == 0:
+        return
+
+    plt.plot(x_axis, cases, color='yellow', linestyle='-', marker='o', markersize=4, markerfacecolor='yellow',
+             label="Total Cases")
+    plt.plot(x_axis, recovery, color='green', linestyle='-', marker='o', markersize=4, markerfacecolor='green',
+             label="Total Recoveries")
+    plt.plot(x_axis, deaths, color='red', linestyle='-', marker='o', markersize=4, markerfacecolor='red',
+             label="Total Deaths")
+
+    plt.gcf().autofmt_xdate()
+    plt.grid()
+    plt.legend()
+    ax = plt.axes()
+    ax.set_yscale('log')
+    plt.setp(ax.get_xticklabels(), color="white")
+    plt.setp(ax.get_yticklabels(), color="white")
+    filename = "%s.png" % str(ctx.message.id)
+    plt.savefig(filename, transparent=True)
+    with open(filename, 'rb') as file:
+        discord_file = File(BytesIO(file.read()), filename='plot.png')
+    os.remove(filename)
+    plt.clf()
+    plt.close()
+    embed = Embed(title=f"Logarithmic graph for country {name}",
+                  color=Color.blue())
+    embed.set_image(url="attachment://plot.png")
+    embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
+    await ctx.channel.send(embed=embed, file=discord_file)
+
+
 async def plot_graph(ctx, iso2, num):
     data = await api_covid.CovidAPI().get_country_timeline(iso2)
     if data is None:
@@ -134,8 +203,10 @@ class Tracker(commands.Cog):
         if len(iso2) == 0:
             await send_error(ctx, "Please enter a valid Country Name or ISO2 or ISO3 code")
             return
+        iso3 = await self.covid.iso2_to_iso3(iso2)
 
-        await plot_graph(ctx, iso2, 1)
+     #  await plot_graph(ctx, iso2, 1)
+        await plot_graph1(ctx,iso3,1, name)
 
     @commands.command(brief="Get stats about any country")
     async def stats(self, ctx, *, country:str = None):
@@ -192,7 +263,9 @@ class Tracker(commands.Cog):
         embed.add_field(name="Tests Conducted", value=str(data['tests']), inline=True)
         embed.add_field(name="Last Update", value=update, inline=False)
         await ctx.send(embed=embed)
-        await plot_graph(ctx, iso2, 0)
+        iso3 = await self.covid.iso2_to_iso3(iso2)
+      #  await plot_graph(ctx, iso2, 0)
+        await plot_graph1(ctx, iso3, 0,name)
 
     @commands.command(brief="Overall Stats about Covid-19")
     async def overall(self, ctx, *, country: str = None):
