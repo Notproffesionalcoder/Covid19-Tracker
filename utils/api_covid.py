@@ -32,12 +32,12 @@ class CovidAPI:
         return response
 
     async def get_all_countries_data(self):
-        self.url="https://corona.lmao.ninja/countries?sort=country"
+        self.url="https://corona.lmao.ninja/v2/countries?sort=country"
         response = await self.api_response()
         return response
 
     async def get_overall_data(self):
-        self.url = "https://corona.lmao.ninja/all"
+        self.url = "https://corona.lmao.ninja/v2/all"
         response = await self.api_response()
         return response
 
@@ -52,7 +52,7 @@ class CovidAPI:
         return response
 
     async def get_country_data(self, country):
-        self.url = f"https://corona.lmao.ninja/countries/{country}"
+        self.url = f"https://corona.lmao.ninja/v2/countries/{country}"
         response = await self.api_response()
         return response
 
