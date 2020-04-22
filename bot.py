@@ -93,6 +93,54 @@ async def plot_graph1(ctx, iso3, num, name):
     await ctx.channel.send(embed=embed, file=discord_file)
 
 
+async def plot_graph2(ctx, iso3, name):
+    data = await api_covid.CovidAPI().get_country_timeline1(iso3[0])
+    if data is None:
+        await send_error(ctx, "API Error!")
+        return
+    x_axis = []
+    cases = []
+    for x in data['result']:
+        try:
+            x_axis.append(datetime.strptime(str(x), '%Y-%m-%d'))
+        except Exception:
+            pass
+    for x in iso3:
+        data = await api_covid.CovidAPI().get_country_timeline1(x)
+        if data is None:
+            await send_error(ctx, "API Error!")
+            return
+        arr = []
+        for y in data['result']:
+            try:
+                arr.append(data['result'][y]['confirmed'])
+            except Exception:
+                pass
+        cases.append(arr)
+    col = ["red", "orange", "green", "blue", "yellow"]
+    for i in range(0, len(iso3)):
+        plt.plot(x_axis, cases[i], color=col[i], linestyle='-', marker='o', markersize=4, markerfacecolor=col[i],
+                 label=name[i])
+
+    plt.gcf().autofmt_xdate()
+    plt.grid()
+    plt.legend()
+    ax = plt.axes()
+    plt.setp(ax.get_xticklabels(), color="white")
+    plt.setp(ax.get_yticklabels(), color="white")
+    filename = "%s.png" % str(ctx.message.id)
+    plt.savefig(filename, transparent=True)
+    with open(filename, 'rb') as file:
+        discord_file = File(BytesIO(file.read()), filename='plot.png')
+    os.remove(filename)
+    plt.clf()
+    plt.close()
+    embed = Embed(title=f"Linear graph for country {name}", color=Color.blue())
+    embed.set_image(url="attachment://plot.png")
+    embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
+    await ctx.channel.send(embed=embed, file=discord_file)
+
+
 async def plot_graph(ctx, iso2, num):
     data = await api_covid.CovidAPI().get_country_timeline(iso2)
     if data is None:
@@ -174,7 +222,7 @@ class Tracker(commands.Cog):
     @commands.command(brief='Plot various graphs about a country')
     async def plot(self, ctx, *, country:str = None):
         """Usage: `-plot <country 2/3 digit code>` or `-plot <country_name>`"""
-
+        
         if country is None:
             await ctx.send(f"Usage: `-plot <country 2/3 digit code>` or `-plot <country_name>`")
             return
@@ -183,7 +231,10 @@ class Tracker(commands.Cog):
         slug = ""
 
         if len(country) == 3:
-            country = await self.covid.iso3_to_iso2(country.lower())
+            try:
+                country = await self.covid.iso3_to_iso2(country.lower())
+            except Exception:
+                pass
 
         data = await self.covid.get_countries_list()
         if data is None:
@@ -322,6 +373,53 @@ class Tracker(commands.Cog):
         embed.add_field(name="Total Deaths", value=death, inline=True)
         embed.set_footer(text="Bot made by @bhavya#9855")
         await ctx.send(embed=embed)
+
+    @commands.command(brief="Compare countries")
+    async def compare(self, ctx, *args:str):
+        countries = args
+        if len(countries) == 0:
+            await send_error(ctx, "Usage `-compare <list of countries>`")
+            return
+        if len(countries) > 5:
+            await send_error(ctx, "Please enter atmost 5 countries")
+            return
+
+        iso2 = []
+        name = []
+        slug = []
+        country = []
+
+        for i in countries:
+            if len(i) == 3:
+                try:
+                    country.append(await self.covid.iso3_to_iso2(i.lower()))
+                except Exception:
+                    pass
+            else:
+                country.append(i)
+
+        data = await self.covid.get_countries_list()
+        if data is None:
+            await send_error(ctx, "API Error!")
+            return
+
+        for x in data:
+            for i in country:
+                try:
+                    if x['Country'].upper() == i.upper() or x['ISO2'] == i.upper():
+                        iso2.append(x['ISO2'])
+                        name.append(x['Country'])
+                        slug.append(x['Slug'])
+                        break
+                except Exception:
+                    pass
+        if len(iso2) == 0:
+            await send_error(ctx, "Please enter a valid Country Name or ISO2 or ISO3 code")
+            return
+        iso3 = []
+        for x in iso2:
+            iso3.append(await self.covid.iso2_to_iso3(x))
+        await plot_graph2(ctx,iso3,name)
 
 
 def setup(client):
