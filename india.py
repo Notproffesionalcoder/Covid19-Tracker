@@ -24,17 +24,21 @@ async def send_error(ctx, message):
 
 async def send_help(ctx):
     desc = "__India specific commands__\n\n"
-    desc += "1. `-ind stats`\nGet stats about a particular state/union-territory/city of India\nEx: **-ind stats**\n"
-    desc += "2. `-ind today`\nGet stats about new cases/deaths/recoveries in India today\nEx: **-ind today**\n\n"
+    desc += "1. `cov!ind stats`\nGet stats about a particular state/union-territory/city of India\nEx: **cov!ind stats**\n"
+    desc += "2. `cov!ind today`\nGet stats about new cases/deaths/recoveries in India today\nEx: **cov!ind today**\n\n"
 
     embed = discord.Embed(description=desc, color=discord.Color.blue())
     embed.set_author(name="Information About Commands")
     embed.set_footer(text="Made by bhavya#9855")
-    embed.add_field(name="Prefix", value="`-` or `@mention`", inline=True)
+    embed.add_field(name="Prefix", value="`cov!` or `@mention`", inline=False)
     embed.add_field(name="Bot Invite Link",
                     value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
                     inline=True)
-    embed.add_field(name="Bot Source code", value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+    embed.add_field(name="Bot Source code",
+                    value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                    inline=True)
+    embed.add_field(name="Vote for me",
+                    value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
                     inline=True)
     await ctx.send(embed=embed)
 
@@ -69,7 +73,7 @@ class India(commands.Cog):
             for x in self.states:
                 data.append([str(count), x])
                 count += 1
-            message = f"To get stats for a region, type `-ind stats <ID of region from table>`"
+            message = f"To get stats for a region, type `cov!ind stats <ID of region from table>`"
             await paginator.Paginator(data, header, "Select the region", 12, message).paginate(ctx, self.client)
             return
 
