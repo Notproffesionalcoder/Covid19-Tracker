@@ -44,7 +44,10 @@ class CovidAPI:
     async def iso3_to_iso2(self, code:str):
         self.url = f"https://restcountries.eu/rest/v2/alpha?codes={code}"
         response = await self.api_response()
-        return response[0]['alpha2Code']
+        try:
+            return response[0]['alpha2Code']
+        except Exception:
+            return ""
 
     async def get_countries_list(self):
         self.url = "https://api.covid19api.com/countries"
@@ -67,7 +70,12 @@ class CovidAPI:
         return response
 
     async def iso2_to_iso3(self,iso2):
-        self.url=f"http://country.io/iso3.json";
+        self.url = f"http://country.io/iso3.json";
         response = await self.api_response()
         return response[iso2]
+
+    async def get_usa_states(self):
+        self.url = f"https://corona.lmao.ninja/v2/states"
+        response = await self.api_response()
+        return response
 
