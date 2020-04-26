@@ -1,3 +1,5 @@
+import urllib
+
 import discord
 from discord.ext import commands
 from discord import Embed, Color, File
@@ -11,6 +13,8 @@ from datetime import datetime
 import json
 import random
 import time
+import re
+import requests
 
 
 async def send_error(ctx, message):
@@ -22,6 +26,31 @@ def send_banner():
         data = json.load(f)
         f.close()
     return random.choice(data["banner"])
+
+
+def get_url_images_in_text(country):
+    '''finds image urls'''
+    country.replace(" ", "_")
+    resp = requests.get(f"https://en.wikipedia.org/wiki/2020_coronavirus_pandemic_in_{country}")
+    text = resp.text
+    urls = []
+    results = re.findall(r'(?:http\:|https\:)?\/\/.*\.(?:png|jpg)', text)
+    for x in results:
+      urls.append(x)
+    if len(urls[0]) < 300:
+        return urls[0]
+
+    country = "the_"+country
+    resp = requests.get(f"https://en.wikipedia.org/wiki/2020_coronavirus_pandemic_in_{country}")
+    text = resp.text
+    urls = []
+    results = re.findall(r'(?:http\:|https\:)?\/\/.*\.(?:png|jpg)', text)
+    for x in results:
+        urls.append(x)
+    if len(urls[0]) < 300:
+        return urls[0]
+
+    return None
 
 
 async def plot_graph1(ctx, iso3, num, name):
@@ -61,6 +90,17 @@ async def plot_graph1(ctx, iso3, num, name):
     embed = Embed(title=f"Linear graph for country {name}", color=Color.blue())
     embed.set_image(url="attachment://plot.png")
     embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
+    if num == -1:
+        return discord_file
+    embed.add_field(name="Bot Invite Link",
+                    value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                    inline=True)
+    embed.add_field(name="Bot Source code",
+                    value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                    inline=True)
+    embed.add_field(name="Vote for me",
+                    value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                    inline=True)
     await ctx.channel.send(embed=embed, file=discord_file)
     if num == 0:
         return
@@ -89,6 +129,15 @@ async def plot_graph1(ctx, iso3, num, name):
     embed = Embed(title=f"Logarithmic graph for country {name}",
                   color=Color.blue())
     embed.set_image(url="attachment://plot.png")
+    embed.add_field(name="Bot Invite Link",
+                    value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                    inline=True)
+    embed.add_field(name="Bot Source code",
+                    value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                    inline=True)
+    embed.add_field(name="Vote for me",
+                    value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                    inline=True)
     embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
     await ctx.channel.send(embed=embed, file=discord_file)
 
@@ -138,6 +187,15 @@ async def plot_graph2(ctx, iso3, name):
     embed = Embed(title=f"Linear graph for country {name}", color=Color.blue())
     embed.set_image(url="attachment://plot.png")
     embed.set_footer(text=send_banner(), icon_url=ctx.author.avatar_url)
+    embed.add_field(name="Bot Invite Link",
+                    value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                    inline=True)
+    embed.add_field(name="Bot Source code",
+                    value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                    inline=True)
+    embed.add_field(name="Vote for me",
+                    value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                    inline=True)
     await ctx.channel.send(embed=embed, file=discord_file)
 
 
@@ -221,10 +279,10 @@ class Tracker(commands.Cog):
 
     @commands.command(brief='Plot various graphs about a country')
     async def plot(self, ctx, *, country:str = None):
-        """Usage: `-plot <country 2/3 digit code>` or `-plot <country_name>`"""
+        """Usage: `cov!plot <country 2/3 digit code>` or `cov!plot <country_name>`"""
         
         if country is None:
-            await ctx.send(f"Usage: `-plot <country 2/3 digit code>` or `-plot <country_name>`")
+            await ctx.send(f"Usage: `cov!plot <country 2/3 digit code>` or `cov!plot <country_name>`")
             return
         iso2 = ""
         name = ""
@@ -241,6 +299,11 @@ class Tracker(commands.Cog):
             await send_error(ctx, "API Error!")
             return
 
+        if country.upper() == "IRAN":
+            country = "ir"
+        if country.upper() == "RUSSIA":
+            country = "ru"
+
         for x in data:
             try:
                 if x['Country'].upper() == country.upper() or x['ISO2'] == country.upper():
@@ -254,6 +317,10 @@ class Tracker(commands.Cog):
         if len(iso2) == 0:
             await send_error(ctx, "Please enter a valid Country Name or ISO2 or ISO3 code")
             return
+        if iso2.lower() == "ir":
+            name = "Iran"
+        if iso2.lower() == "ru":
+            name = "Russia"
         iso3 = await self.covid.iso2_to_iso3(iso2)
 
      #  await plot_graph(ctx, iso2, 1)
@@ -261,10 +328,10 @@ class Tracker(commands.Cog):
 
     @commands.command(brief="Get stats about any country")
     async def stats(self, ctx, *, country:str = None):
-        """Usage: `-stats <country 2/3 digit code>` or `-stats <country_name>`"""
+        """Usage: `cov!stats <country 2/3 digit code>` or `cov!stats <country_name>`"""
 
         if country is None:
-            await ctx.send(f"Usage: `-stats <country 2/3 digit code>` or `-stats <country_name>`")
+            await ctx.send(f"Usage: `cov!stats <country 2/3 digit code>` or `cov!stats <country_name>`")
             return
 
         iso2 = ""
@@ -279,6 +346,11 @@ class Tracker(commands.Cog):
             await send_error(ctx, "API Error!")
             return
 
+        if country.upper() == "IRAN":
+            country = "ir"
+        if country.upper() == "RUSSIA":
+            country = "ru"
+
         for x in data:
             try:
                 if x['Country'].upper() == country.upper() or x['ISO2'] == country.upper():
@@ -292,6 +364,11 @@ class Tracker(commands.Cog):
         if len(iso2) == 0:
             await send_error(ctx, "Please enter a valid Country Name or ISO2 or ISO3 code")
             return
+
+        if iso2.lower() == "ir":
+            name = "Iran"
+        if iso2.lower() == "ru":
+            name = "Russia"
 
         data = await self.covid.get_country_data(iso2)
         tme = round(time.time())
@@ -312,11 +389,36 @@ class Tracker(commands.Cog):
         embed.add_field(name="Active", value=str(data['active']), inline=True)
         embed.add_field(name="Critical", value=str(data['critical']), inline=True)
         embed.add_field(name="Tests Conducted", value=str(data['tests']), inline=True)
-        embed.add_field(name="Last Update", value=update, inline=False)
-        await ctx.send(embed=embed)
+        embed.set_footer(text=update)
+
+        embed.add_field(name="Bot Invite Link",
+                        value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                        inline=True)
+        embed.add_field(name="Bot Source code",
+                        value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                        inline=True)
+        embed.add_field(name="Vote for me",
+                        value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                        inline=True)
+
         iso3 = await self.covid.iso2_to_iso3(iso2)
+
+        with open("wiki.json", "r") as f:
+            data = json.load(f)
+            f.close()
+        pic = get_url_images_in_text(data[iso2.upper()])
+        if pic is not None:
+            embed.set_image(url=pic)
+        else:
+            url = await plot_graph1(ctx, iso3, -1, name)
+            embed.set_image(url="attachment://plot.png")
+            await ctx.send(embed=embed, file=url)
+            return
+        await ctx.send(embed=embed)
+
+
       #  await plot_graph(ctx, iso2, 0)
-        await plot_graph1(ctx, iso3, 0,name)
+      #  await plot_graph1(ctx, iso3, 0,name)
 
     @commands.command(brief="Overall Stats about Covid-19")
     async def overall(self, ctx, *, country: str = None):
@@ -344,9 +446,22 @@ class Tracker(commands.Cog):
         embed.add_field(name="Active Cases", value=str(data["active"]), inline=False)
         embed.add_field(name="Critical Cases", value=str(data["critical"]), inline=False)
         embed.add_field(name="Affected Countries", value=str(data["affectedCountries"]), inline=False)
+
+        embed.set_image(url="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/COVID-19_Outbreak_World_Map_per_Capita.svg/640px-COVID-19_Outbreak_World_Map_per_Capita.svg.png")
         embed.set_footer(text=update)
+        embed.add_field(name="Bot Invite Link",
+                        value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                        inline=True)
+        embed.add_field(name="Bot Source code",
+                        value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                        inline=True)
+        embed.add_field(name="Vote for me",
+                        value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                        inline=True)
         await ctx.send(embed=embed)
 
+    @commands.command(bried="Worst affected countries")
+    async def top(self,ctx):
         data = await self.covid.get_all_countries_data()
         if data is None:
             await send_error(ctx, "API Error!")
@@ -372,13 +487,24 @@ class Tracker(commands.Cog):
         embed.add_field(name="Total Cases", value=cases, inline=True)
         embed.add_field(name="Total Deaths", value=death, inline=True)
         embed.set_footer(text="Bot made by @bhavya#9855")
+
+        embed.add_field(name="Bot Invite Link",
+                        value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                        inline=True)
+        embed.add_field(name="Bot Source code",
+                        value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                        inline=True)
+        embed.add_field(name="Vote for me",
+                        value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                        inline=True)
+
         await ctx.send(embed=embed)
 
     @commands.command(brief="Compare countries")
     async def compare(self, ctx, *args:str):
         countries = args
         if len(countries) == 0:
-            await send_error(ctx, "Usage `-compare <list of countries>`")
+            await send_error(ctx, "Usage `cov!compare <list of countries>`")
             return
         if len(countries) > 5:
             await send_error(ctx, "Please enter atmost 5 countries")
@@ -420,6 +546,86 @@ class Tracker(commands.Cog):
         for x in iso2:
             iso3.append(await self.covid.iso2_to_iso3(x))
         await plot_graph2(ctx,iso3,name)
+
+    @commands.command(brief='Plot stats about last 6 days')
+    async def hist(self, ctx, *, country: str = None):
+        """Usage: `cov!hist <country 2/3 digit code>` or `cov!hist <country_name>`"""
+
+        if country is None:
+            await ctx.send(f"Usage: `cov!hist <country 2/3 digit code>` or `cov!hist <country_name>`")
+            return
+        iso2 = ""
+        name = ""
+        slug = ""
+
+        if len(country) == 3:
+            try:
+                country = await self.covid.iso3_to_iso2(country.lower())
+            except Exception:
+                pass
+
+        data = await self.covid.get_countries_list()
+        if data is None:
+            await send_error(ctx, "API Error!")
+            return
+
+        if country.upper() == "IRAN":
+            country = "ir"
+        if country.upper() == "RUSSIA":
+            country = "ru"
+
+        for x in data:
+            try:
+                if x['Country'].upper() == country.upper() or x['ISO2'] == country.upper():
+                    iso2 = x['ISO2']
+                    name = x['Country']
+                    slug = x['Slug']
+                    break
+            except Exception:
+                pass
+
+        if len(iso2) == 0:
+            await send_error(ctx, "Please enter a valid Country Name or ISO2 or ISO3 code")
+            return
+        if iso2.lower() == "ir":
+            name = "Iran"
+        if iso2.lower() == "ru":
+            name = "Russia"
+        iso3 = await self.covid.iso2_to_iso3(iso2)
+        data = await self.covid.get_country_timeline1(iso3)
+        if data is None:
+            await send_error(ctx, "API Error!")
+            return
+
+        data = data['result']
+        dates = []
+        val = []
+        for x in data:
+            dates.append(x)
+            val.append([data[x]['confirmed'], data[x]['deaths'], data[x]['recovered']])
+
+        dates.reverse()
+        val.reverse()
+        val = [val[i] for i in range(0, 7)]
+        dates = [dates[i] for i in range(0, 7)]
+        dates = [datetime.strptime(x, '%Y-%m-%d').strftime('%d %b') for x in dates]
+
+        embed = discord.Embed(color=Color(randint(0, 0xFFFFFF)))
+        embed.set_author(name=f"Last 6 days Data for the country {name}", icon_url=f"https://corona.lmao.ninja/assets/img/flags/{iso2.lower()}.png")
+        embed.set_thumbnail(url=f"https://corona.lmao.ninja/assets/img/flags/{iso2.lower()}.png")
+        for i in range(0, 6):
+            embed.add_field(name=f":calendar_spiral: {dates[i]}", value=f"Tot: {val[i][0]} \n`(+{val[i][0]-val[i+1][0]})`\nDead: {val[i][1]} \n`(+{val[i][1]-val[i+1][1]})`\nRec: {val[i][2]} \n`(+{val[i][2]-val[i+1][2]})`\n")
+
+        embed.add_field(name="Bot Invite Link",
+                        value="[:envelope: Invite](https://discordapp.com/oauth2/authorize?client_id=694820915669893201&permissions=392257&scope=bot)",
+                        inline=True)
+        embed.add_field(name="Bot Source code",
+                        value="[:tools: GitHub](https://github.com/pseudocoder10/Covid19-Tracker)",
+                        inline=True)
+        embed.add_field(name="Vote for me",
+                        value="[:first_place: top.gg](https://top.gg/bot/694820915669893201/vote)",
+                        inline=True)
+        await ctx.send(embed=embed)
 
 
 def setup(client):
