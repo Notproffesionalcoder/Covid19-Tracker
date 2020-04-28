@@ -1,4 +1,6 @@
-
+<a href="https://top.gg/bot/694820915669893201" >
+  <img src="https://top.gg/api/widget/694820915669893201.svg" alt="Covid-19 Tracker" />
+</a>
 
 # Covid19-Tracker
 
