@@ -50,9 +50,10 @@ class CovidAPI:
             return ""
 
     async def get_countries_list(self):
-        self.url = "https://api.covid19api.com/countries"
-        response = await self.api_response()
-        return response
+        with open("countries.json", "r") as f:
+            data = json.load(f)
+            f.close()
+        return data
 
     async def get_country_data(self, country):
         self.url = f"https://corona.lmao.ninja/v2/countries/{country}"
@@ -66,6 +67,11 @@ class CovidAPI:
 
     async def get_country_timeline1(self,country):
         self.url = f"https://covidapi.info/api/v1/country/{country}"
+        response = await self.api_response()
+        return response
+
+    async def get_country_timeline2(self, iso2):
+        self.url = f"https://corona-api.com/countries/{iso2}"
         response = await self.api_response()
         return response
 

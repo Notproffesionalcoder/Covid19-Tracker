@@ -1,3 +1,4 @@
+import asyncio
 import urllib
 
 import discord
@@ -53,8 +54,8 @@ def get_url_images_in_text(country):
     return None
 
 
-async def plot_graph1(ctx, iso3, num, name):
-    data = await api_covid.CovidAPI().get_country_timeline1(iso3)
+async def plot_graph1(ctx, iso2, num, name):
+    data = await api_covid.CovidAPI().get_country_timeline2(iso2)
     if data is None:
         await send_error(ctx, "API Error!")
         return
@@ -62,12 +63,12 @@ async def plot_graph1(ctx, iso3, num, name):
     cases = []
     deaths = []
     recovery = []
-    for x in data['result']:
+    for x in data['data']['timeline']:
         try:
-            x_axis.append(datetime.strptime(str(x), '%Y-%m-%d'))
-            cases.append(data['result'][x]['confirmed'])
-            deaths.append(data['result'][x]['deaths'])
-            recovery.append(data['result'][x]['recovered'])
+            x_axis.append(datetime.strptime(x['date'], '%Y-%m-%d'))
+            cases.append(x['confirmed'])
+            deaths.append(x['deaths'])
+            recovery.append(x['recovered'])
         except Exception:
             pass
     plt.plot(x_axis, cases, color='yellow', linestyle='-', marker='o', markersize=4, markerfacecolor='yellow', label="Total Cases")
@@ -142,32 +143,33 @@ async def plot_graph1(ctx, iso3, num, name):
     await ctx.channel.send(embed=embed, file=discord_file)
 
 
-async def plot_graph2(ctx, iso3, name):
-    data = await api_covid.CovidAPI().get_country_timeline1(iso3[0])
+async def plot_graph2(ctx, iso2, name):
+    data = await api_covid.CovidAPI().get_country_timeline2(iso2[0])
     if data is None:
         await send_error(ctx, "API Error!")
         return
     x_axis = []
     cases = []
-    for x in data['result']:
+    for x in data['data']['timeline']:
         try:
-            x_axis.append(datetime.strptime(str(x), '%Y-%m-%d'))
+            x_axis.append(datetime.strptime(x['date'], '%Y-%m-%d'))
         except Exception:
             pass
-    for x in iso3:
-        data = await api_covid.CovidAPI().get_country_timeline1(x)
+    x_axis = x_axis[:450]
+    for x in iso2:
+        data = await api_covid.CovidAPI().get_country_timeline2(x)
         if data is None:
             await send_error(ctx, "API Error!")
             return
         arr = []
-        for y in data['result']:
+        for y in data['data']['timeline']:
             try:
-                arr.append(data['result'][y]['confirmed'])
+                arr.append(y['confirmed'])
             except Exception:
                 pass
-        cases.append(arr)
+        cases.append(arr[:450])
     col = ["red", "orange", "green", "blue", "yellow"]
-    for i in range(0, len(iso3)):
+    for i in range(0, len(iso2)):
         plt.plot(x_axis, cases[i], color=col[i], linestyle='-', marker='o', markersize=4, markerfacecolor=col[i],
                  label=name[i])
 
@@ -288,6 +290,9 @@ class Tracker(commands.Cog):
         name = ""
         slug = ""
 
+        if country.upper() == "UAE":
+            country = "ae"
+
         if len(country) == 3:
             try:
                 country = await self.covid.iso3_to_iso2(country.lower())
@@ -324,7 +329,7 @@ class Tracker(commands.Cog):
         iso3 = await self.covid.iso2_to_iso3(iso2)
 
      #  await plot_graph(ctx, iso2, 1)
-        await plot_graph1(ctx,iso3,1, name)
+        await plot_graph1(ctx,iso2,1, name)
 
     @commands.command(brief="Get stats about any country")
     async def stats(self, ctx, *, country:str = None):
@@ -337,6 +342,9 @@ class Tracker(commands.Cog):
         iso2 = ""
         name = ""
         slug = ""
+
+        if country.upper() == "UAE":
+            country = "ae"
 
         if len(country) == 3:
             country = await self.covid.iso3_to_iso2(country.lower())
@@ -516,6 +524,8 @@ class Tracker(commands.Cog):
         country = []
 
         for i in countries:
+            if i.upper() == "UAE":
+                i = "ae"
             if len(i) == 3:
                 try:
                     country.append(await self.covid.iso3_to_iso2(i.lower()))
@@ -532,7 +542,13 @@ class Tracker(commands.Cog):
         for x in data:
             for i in country:
                 try:
-                    if x['Country'].upper() == i.upper() or x['ISO2'] == i.upper():
+                    if i.upper() == "IRAN":
+                        i = "ir"
+                    if i.upper() == "RUSSIA":
+                        i = "ru"
+                    if i.upper() == "UAE":
+                        i = "ae"
+                    if i.upper() == x['Country'].upper() or i.upper() == x['ISO2']:
                         iso2.append(x['ISO2'])
                         name.append(x['Country'])
                         slug.append(x['Slug'])
@@ -545,7 +561,7 @@ class Tracker(commands.Cog):
         iso3 = []
         for x in iso2:
             iso3.append(await self.covid.iso2_to_iso3(x))
-        await plot_graph2(ctx,iso3,name)
+        await plot_graph2(ctx,iso2,name)
 
     @commands.command(brief='Plot stats about last 6 days')
     async def hist(self, ctx, *, country: str = None):
@@ -557,6 +573,9 @@ class Tracker(commands.Cog):
         iso2 = ""
         name = ""
         slug = ""
+
+        if country.upper() == "UAE":
+            country = "ae"
 
         if len(country) == 3:
             try:
@@ -573,6 +592,7 @@ class Tracker(commands.Cog):
             country = "ir"
         if country.upper() == "RUSSIA":
             country = "ru"
+
 
         for x in data:
             try:
@@ -592,22 +612,18 @@ class Tracker(commands.Cog):
         if iso2.lower() == "ru":
             name = "Russia"
         iso3 = await self.covid.iso2_to_iso3(iso2)
-        data = await self.covid.get_country_timeline1(iso3)
+        data = await self.covid.get_country_timeline2(iso2)
         if data is None:
             await send_error(ctx, "API Error!")
             return
 
-        data = data['result']
+        data = data['data']['timeline']
         dates = []
         val = []
-        for x in data:
-            dates.append(x)
-            val.append([data[x]['confirmed'], data[x]['deaths'], data[x]['recovered']])
+        for x in data[:7]:
+            dates.append(x['date'])
+            val.append([x['confirmed'], x['deaths'], x['recovered']])
 
-        dates.reverse()
-        val.reverse()
-        val = [val[i] for i in range(0, 7)]
-        dates = [dates[i] for i in range(0, 7)]
         dates = [datetime.strptime(x, '%Y-%m-%d').strftime('%d %b') for x in dates]
 
         embed = discord.Embed(color=Color(randint(0, 0xFFFFFF)))
